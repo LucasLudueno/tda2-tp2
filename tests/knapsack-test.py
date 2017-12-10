@@ -10,63 +10,130 @@ from knapsack import Knapsack
 
 class TestKnapsackClass(unittest.TestCase):
     def test_knapsack(self):
-        lamda = 0.2
-        values = [] #[1, 10, 500, 30, 60, 100, 120]
-        weigths = [] #[15, 150, 120, 100, 10, 20, 30]
-        capacity = 200
+        # Problems to test
+        problems = ['dynamic', 'bipercube', 'hypercube2', 'hypercube4', 'hypercube6', 'hypercube8']
+        naive      = 22
+        dynamic    = 22
+        parallel   = 22
+        bipercube  = 22
+        hypercube2 = 22
+        hypercube4 = 22
+        hypercube6 = 22
+        hypercube8 = 22
 
-        for i in range(50):
-            values.append(random.randint(0, 300))
-            weigths.append(random.randint(0, 300))
+        # Variables
+        capacity = 100
+        elementCount = 1000
+        profitsRange = 1000
+        weigthsRange = 1000
 
-        # values = [300, 64, 198, 173, 111, 194, 41, 237, 189, 234, 246, 73, 236, 230, 213, 155, 8, 171, 119, 177, 179, 187, 150, 104, 165, 191, 149, 31, 284, 82, 77, 192, 104, 16, 125, 152, 83, 173, 143, 100, 240, 287, 12, 230, 134, 78, 97, 238, 255, 48, 208, 286, 163, 217, 119, 16, 246, 300, 79, 268]
-        # weigths = [13, 176, 67, 158, 8, 272, 256, 202, 91, 64, 161, 135, 0, 215, 116, 20, 105, 49, 206, 131, 61, 177, 2, 260, 70, 11, 128, 256, 241, 274, 252, 18, 14, 114, 149, 117, 72, 274, 48, 148, 53, 183, 171, 278, 246, 179, 200, 139, 151, 264, 232, 230, 39, 51, 262, 108, 159, 235, 215, 98]
+        values =  []
+        weigths = []
+
+        # Construct the Knapsack
+        for i in range(elementCount):
+            values.append(random.randint(1, profitsRange))
+            weigths.append(random.randint(1, weigthsRange))
 
         knap = Knapsack(capacity, weigths, values)
 
-        # start = time.time()
-        # naive = knap.naive()
-        # end = time.time()
+        # Resolve
 
-        # print "Naive time: " + str(end - start)
-
-        # start = time.time()
-        # dynamic = knap.dynamic()
-        # end = time.time()
-
-        # print "Dynamic time: " + str(end - start)
-
-        # start = time.time()
-        # noParallel = knap.noParallel()
-        # end = time.time()
-
-        # print "No Parallel time: " + str(end - start)
-
-        # start = time.time()
-        # parallel = knap.parallel()
-        # end = time.time()
-
-        # print "Parallel time: " + str(end - start)
-
-        # values = [v * lamda for v in values]
-        # knap.values = values
-
-        # start = time.time()
-        # parallelAprox = knap.parallel() / lamda
-        # end = time.time()
-
-        # print "Parallel Aprox time: " + str(end - start)
-
+        # Dynamic
         start = time.time()
-        parallelBetterAprox = knap.parallelAprox()
+        dynamic = knap.dynamic()
         end = time.time()
 
-        print "Parallel Better Aprox time: " + str(end - start)
+        print "Dynamic time: " + str(end - start)
 
+        # Naive
+        if 'naive' in problems:
+            start = time.time()
+            naive = knap.naive()
+            end = time.time()
 
-        # self.assertEqual(naive, 220)
-        # self.assertEqual(dynamic, parallel)
-        self.assertEqual(200, parallel)
+            print "Naive time: " + str(end - start)
+
+        # Parallel
+        if 'parallel' in problems:
+            start = time.time()
+            parallel = knap.parallel()
+            end = time.time()
+
+            print "Parallel time: " + str(end - start)
+
+        # Bipercube
+        if 'bipercube' in problems:
+            start = time.time()
+            bipercube = knap.bipercube()
+            end = time.time()
+
+            print "Bipercube time: " + str(end - start)
+
+        # Hypercube
+
+        # 2 Processors
+        if 'hypercube2' in problems:
+            start = time.time()
+            hypercube2 = knap.hypercube(2)
+            end = time.time()
+
+            print "Hypercube 2 time: " + str(end - start)
+
+        # 4 Processors
+        if 'hypercube4' in problems:
+            start = time.time()
+            hypercube4 = knap.hypercube(4)
+            end = time.time()
+
+            print "Hypercube 4 time: " + str(end - start)
+
+        # 6 Processors
+        if 'hypercube6' in problems:
+            start = time.time()
+            hypercube6 = knap.hypercube(6)
+            end = time.time()
+
+            print "Hypercube 6 time: " + str(end - start)
+
+        # 8 Processors
+        if 'hypercube8' in problems:
+            start = time.time()
+            hypercube8 = knap.hypercube(8)
+            end = time.time()
+
+            print "Hypercube 8 time: " + str(end - start)
+
+        # Results
+
+        # Naive
+        if 'naive' in problems:
+            self.assertEqual(naive, dynamic)
+
+        # Parallel
+        if 'parallel' in problems:
+            self.assertEqual(parallel, dynamic)
+
+        # Bipercube
+        if 'bipercube' in problems:
+            self.assertEqual(bipercube, dynamic)
+
+        # 2 Processors
+        if 'hypercube2' in problems:
+            self.assertEqual(hypercube2, dynamic)
+
+        # 4 Processors
+        if 'hypercube4' in problems:
+            self.assertEqual(hypercube4, dynamic)
+
+        # 6 Processors
+        if 'hypercube6' in problems:
+            self.assertEqual(hypercube6, dynamic)
+
+        # 8 Processors
+        if 'hypercube8' in problems:
+            self.assertEqual(hypercube8, dynamic)
+
         # self.assertEqual(parallel, parallelAprox)
 
 

@@ -1,32 +1,77 @@
 import multiprocessing as mp
 from multiprocessing import Pool
 
-def resolveCombinations(combTuple):
-    oneSolution = combTuple[0]
-    multSolutions = combTuple[1]
-    capacity = combTuple[2]
-    results = []
+# Dynamic resolution passing a list of params
+def resolveDynamicParallel(params):
+    capacity = params[0]
+    weights = params[1]
+    profits = params[2]
+    n = params[3]
 
-    for solution in multSolutions:
-        weight = oneSolution[0] + solution[0]
-        value = oneSolution[1] + solution[1]
+    return resolveDynamic(capacity, weights, profits, n)[n]
 
-        if weight <= capacity:
-            results.append((weight, value))
+# Dynamic resolution passing params
+def resolveDynamic(capacity, weights, values, n, queueResult = None):
+    K = [[0 for x in range(capacity + 1)] for x in range(n + 1)]
 
-    return results
+    # Build table K[][] in bottom up manner
+    for i in range(n + 1):
+        for w in range(capacity + 1):
+            if i == 0 or w == 0:
+                K[i][w] = 0
+            elif weights[i - 1] <= w:
+                K[i][w] = max(values[i - 1] + K[i - 1][w - weights[i - 1]],  K[i - 1][w])
+            else:
+                K[i][w] = K[i - 1][w]
+
+    if queueResult == None:
+        return K
+    queueResult.put(K)
+
+# Combine profits in parallel
+def combineProfitsParallel(profits, capacity, queueResult = None):
+    if len(profits) == 1:
+        if queueResult != None:
+            return queueResult.put(profits[0])
+        return profits[0]
+
+    middle = int(len(profits) / 2)
+    p1 = profits[0 : middle]
+    p2 = profits[middle: ]
+
+    queue = mp.Queue()
+    pool = mp.Process(target = combineProfitsParallel, args = (p1, capacity, queue, ))
+    pool.start()
+
+    r1 = combineProfitsParallel(p2, capacity)
+    r2 = queue.get()
+
+    result = []
+
+    for i in range(capacity + 1):
+        maxProfit = 0
+
+        for j in range(i + 1):
+            value = r1[j] + r2[i - j]
+
+            if value > maxProfit:
+                maxProfit = value
+            
+        result.append(maxProfit)
+    
+    if queueResult != None:
+        return queueResult.put(result)
+    return result
+
 
 class Knapsack:
-    """
-
-    """
-
     def __init__(self, capacity, weights, values):
         self.capacity = capacity
         self.weights = weights
         self.values = values
         self.n = len(values)
 
+    # Naive
     def naive(self):
         return self.resolveNaive(self.capacity, self.weights, self.values, self.n)
 
@@ -47,79 +92,83 @@ class Knapsack:
             return max(values[n - 1] + self.resolveNaive(capacity-weights[n - 1] , weights , values , n - 1),
                     self.resolveNaive(capacity , weights , values , n - 1))
 
+    # Dynamic
     def dynamic(self):
-        K = [[0 for x in range(self.capacity + 1)] for x in range(self.n + 1)]
-    
-        # Build table K[][] in bottom up manner
-        for i in range(self.n + 1):
-            for w in range(self.capacity + 1):
-                if i == 0 or w == 0:
-                    K[i][w] = 0
-                elif self.weights[i - 1] <= w:
-                    K[i][w] = max(self.values[i - 1] + K[i - 1][w - self.weights[i - 1]],  K[i - 1][w])
-                else:
-                    K[i][w] = K[i - 1][w]
-    
-        return K[self.n][self.capacity]
+        solution = resolveDynamic(self.capacity, self.weights, self.values, self.n)
+
+        return solution[self.n][self.capacity]
+
+    # Bypercube
+    def bipercube(self):
+        processors = 2
+        middle = int(self.n / processors)
+
+        bWeights = self.weights[0 : middle]
+        bProfits = self.values[0 : middle]
+        dWeights = self.weights[middle:]
+        dProfits = self.values[middle:]
+
+        # Resolve parallel
+        queue = mp.Queue()
+        pool = mp.Process(target = resolveDynamic, args = (self.capacity, bWeights, bProfits, len(bWeights), queue, ))
+        pool.start()
+
+        d = resolveDynamic(self.capacity, dWeights, dProfits, len(dWeights))[len(dWeights)]
+        b = queue.get()[len(bWeights)]
+
+        # Join results
+        result = []
+
+        for i in range(self.capacity + 1):
+            maxProfit = 0
+
+            for j in range(i + 1):
+                value = b[j] + d[i - j]
+
+                if value > maxProfit:
+                    maxProfit = value
+                
+            result.append(maxProfit)
+        
+        return result[-1]
+
+    # Hypercube
+    def hypercube(self, processors = 2):
+        params = []
+
+        # Divide processors
+        division = int(self.n / processors)
+
+        for proc in range(processors):
+            init = proc * division
+            end = (proc + 1) * division
+
+            weights = self.weights[init : end]
+            profits = self.values[init : end]
+            
+            params.append([self.capacity, weights, profits, len(weights)])
+
+        # Resolve parallel
+        pool = Pool(processes = processors)
+        dynamicResults = pool.map(resolveDynamicParallel, params)
+
+        # Join results
+        result = combineProfitsParallel(dynamicResults, self.capacity)
+
+        return result[-1]
 
 
-    def noParallel(self):
-        resultSet = self.resolveNoParalell(0, self.n - 1)
-
-        return max(resultSet, key=lambda x:x[1])[1]
-
+    # Peters and Rudolph
     def parallel(self):
         resultSet = self.resolveParalell(0, self.n - 1)
 
         return max(resultSet, key=lambda x:x[1])[1]
 
-    def resolveNoParalell(self, i, j):
-        result = []
-        if i == j:
-            weight = self.weights[i]
-            value = self.values[i]
-
-            result = [(0, 0)]
-
-            if (weight <= self.capacity):
-                result.append((weight, value))
-        else:
-            # Divide items
-            g1 = self.resolveNoParalell(i, (i + j) / 2)
-            g2 = self.resolveNoParalell((i + j) / 2 + 1, j)
-
-            # Calculate combinations
-
-            for s1 in g1:
-                for s2 in g2:
-                    weight = s1[0] + s2[0]
-                    value = s1[1] + s2[1]
-
-                    if weight <= self.capacity:
-                        result.append((weight, value))
-
-            # Remove repeated solutions
-
-            # max = (9223372036854775807, 0)
-            # result = []
-            # for s1 in g1:
-            #     for s2 in g2:
-            #         weight = s1[0] + s2[0]
-            #         value = s1[1] + s2[1]
-
-            #         if weight >= max[0] and value <= max[1]:
-            #             continue
-            #         elif abs(weight - value) < abs(max[0] - max[1]):
-            #             max = (weight, value)
-
-            #         if weight <= self.capacity:
-            #             result.append((weight, value))
-
-        return result
-
     def resolveParalell(self, i, j, queueResult = None):
         result = []
+        
         if i == j:
+            # Base case
             weight = self.weights[i]
             value = self.values[i]
 
@@ -128,25 +177,12 @@ class Knapsack:
             if (weight <= self.capacity):
                 result.append((weight, value))
         else:
-            # Divide items
+            # Resolve Parallel
             queue = mp.Queue()
             pool = mp.Process(target = self.resolveParalell, args = (i, (i + j) / 2, queue, ))
             pool.start()
             g2 = self.resolveParalell((i + j) / 2 + 1, j)
-            pool.join()
             g1 = queue.get()
-
-            # Calculate combinations in parallel
-
-            # combinations = []
-            # for solution in g1:
-            #     combinations.append([solution, g2, self.capacity])
-
-            # pool = Pool(processes = 6)
-            # combinationResults = pool.map(resolveCombinations, combinations)
-
-            # for combination in combinationResults:
-            #     result = result + combination
 
             # Calculate combinations
             for s1 in g1:
@@ -164,13 +200,13 @@ class Knapsack:
         return result
 
 
+    # Peters and Rudolph Aprox approach
     def parallelAprox(self):
         resultSet = self.resolveParalellAprox(0, self.n - 1)
 
-        return max(resultSet, key=lambda x:x[1])[1]
+        return max(resultSet, key = lambda x:x[1])[1]
 
     def merge(self, g1, g2, k, l):
-        print k, l
         result = []
 
         if k == l:
@@ -234,6 +270,5 @@ class Knapsack:
 
             # Divide g2
             result = self.merge(g1, g2, (i + j) / 2 + 1, j)
-            print "RESULT", result
 
         return result
