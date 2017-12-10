@@ -12,20 +12,20 @@ class TestKnapsackClass(unittest.TestCase):
     def test_knapsack(self):
         # Problems to test
         problems = ['dynamic', 'bipercube', 'hypercube2', 'hypercube4', 'hypercube6', 'hypercube8']
-        naive      = 22
-        dynamic    = 22
-        parallel   = 22
-        bipercube  = 22
-        hypercube2 = 22
-        hypercube4 = 22
-        hypercube6 = 22
-        hypercube8 = 22
+        naive      = 0
+        dynamic    = 0
+        parallel   = 0
+        bipercube  = 0
+        hypercube2 = 0
+        hypercube4 = 0
+        hypercube6 = 0
+        hypercube8 = 0
 
         # Variables
         capacity = 100
-        elementCount = 1000
-        profitsRange = 1000
-        weigthsRange = 1000
+        elementCount = 100
+        profitsRange = 100
+        weigthsRange = 100
 
         values =  []
         weigths = []

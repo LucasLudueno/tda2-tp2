@@ -143,8 +143,15 @@ class Knapsack:
             init = proc * division
             end = (proc + 1) * division
 
-            weights = self.weights[init : end]
-            profits = self.values[init : end]
+            weights = []
+            profits = []
+
+            if proc == (processors - 1):
+                weights = self.weights[init :]
+                profits = self.values[init :]  
+            else:
+                weights = self.weights[init : end]
+                profits = self.values[init : end]
             
             params.append([self.capacity, weights, profits, len(weights)])
 
@@ -194,6 +201,7 @@ class Knapsack:
                         result.append((weight, value))
 
             # Remove repeated solutions
+            result = list(set(result))
         
         if (queueResult != None):
             queueResult.put(result)
