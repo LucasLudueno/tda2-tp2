@@ -21,7 +21,7 @@ class TestKnapsackClass(unittest.TestCase):
         hypercube8 = 0
         
         # Problems to test
-        problems = ['parallel']
+        problems = ['dynamic', 'hypercube2', 'hypercube4', 'hypercube6', 'hypercube8']
 
         # File
         out = open("out.csv", 'w')  # csv output
@@ -38,11 +38,14 @@ class TestKnapsackClass(unittest.TestCase):
             "\n"
         )
 
-        capacities = [100]
-        elements = [100]
+        capacities = [100, 1000]
+        elements = [100, 1000]
 
         for capacity in capacities:
             for element in elements:
+                print
+                print 'Capacity', capacity
+                print 'Elements', element
                 # Times
                 naiveTime      = '-'
                 dynamicTime    = '-'
